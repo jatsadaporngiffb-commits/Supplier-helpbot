@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supplier Help Bot – CPRAM</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:    #0a1f44;
+  --blue:    #1565c0;
+  --sky:     #42a5f5;
+  --ice:     #e3f2fd;
+  --slate:   #546e7a;
+  --mist:    #eceff1;
+  --white:   #ffffff;
+  --gray:    #90a4ae;
+  --dark:    #263238;
+  --success: #26a69a;
+  --warn:    #ffa726;
+  --danger:  #ef5350;
+  --shadow:  0 4px 24px rgba(10,31,68,.12);
+  --shadow-lg: 0 8px 40px rgba(10,31,68,.18);
+  --radius:  14px;
+  --radius-sm: 8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Sarabun',sans-serif;background:var(--mist);color:var(--dark);min-height:100vh;overflow-x:hidden}
+
+/* ─── LAYOUT ─── */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:260px;min-width:260px;background:var(--navy);display:flex;flex-direction:column;padding:0;transition:.3s;z-index:100}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--mist)}
+
+/* ─── SIDEBAR ─── */
+.sidebar-logo{padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-logo .logo-icon{width:44px;height:44px;background:linear-gradient(135deg,var(--sky),var(--blue));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px;box-shadow:0 4px 12px rgba(66,165,245,.35)}
+.sidebar-logo h1{font-size:15px;font-weight:700;color:var(--white);line-height:1.2}
+.sidebar-logo p{font-size:11px;color:var(--gray);margin-top:2px}
+
+.sidebar-menu{flex:1;padding:16px 12px;overflow-y:auto}
+.menu-section{font-size:10px;font-weight:600;color:var(--gray);letter-spacing:.08em;text-transform:uppercase;padding:12px 8px 6px}
+.menu-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;transition:.2s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
+.menu-item:hover{background:rgba(255,255,255,.08);color:var(--white)}
+.menu-item.active{background:linear-gradient(135deg,var(--blue),var(--sky));color:var(--white);box-shadow:0 4px 12px rgba(21,101,192,.4)}
+.menu-item .icon{font-size:16px;width:20px;text-align:center}
+.menu-badge{margin-left:auto;background:var(--sky);color:var(--white);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+
+.sidebar-footer{padding:16px 12px;border-top:1px solid rgba(255,255,255,.08)}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,.06)}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--sky),var(--blue));display:flex;align-items:center;justify-content:center;font-size:14px;color:white;font-weight:700}
+.user-info{flex:1}
+.user-name{font-size:12px;font-weight:600;color:var(--white)}
+.user-role{font-size:10px;color:var(--gray)}
+
+/* ─── TOPBAR ─── */
+.topbar{background:var(--white);padding:14px 28px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 8px rgba(0,0,0,.06);z-index:50}
+.topbar-title{font-size:18px;font-weight:700;color:var(--navy);flex:1}
+.topbar-title span{color:var(--sky)}
+.topbar-actions{display:flex;gap:8px}
+.btn{padding:8px 16px;border-radius:var(--radius-sm);font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.2s;display:flex;align-items:center;gap:6px}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--sky));color:white;box-shadow:0 4px 12px rgba(21,101,192,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(21,101,192,.4)}
+.btn-outline{background:var(--white);color:var(--blue);border:1.5px solid var(--sky)}
+.btn-outline:hover{background:var(--ice)}
+.btn-danger{background:var(--danger);color:white}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* ─── PAGES ─── */
+.page{display:none;flex:1;overflow-y:auto;padding:24px 28px}
+.page.active{display:flex;flex-direction:column;gap:20px}
+
+/* ─── CHAT PAGE ─── */
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden;padding:0}
+.chat-page{flex:1;overflow-y:auto;padding:20px 28px;display:flex;flex-direction:column;gap:12px}
+.chat-page .msg{display:flex;gap:10px;align-items:flex-end;max-width:75%;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chat-page .msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+.msg-avatar.bot{background:linear-gradient(135deg,var(--blue),var(--sky));color:white}
+.msg-avatar.user{background:linear-gradient(135deg,var(--slate),var(--dark));color:white}
+.msg-bubble{padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.6;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.msg.bot .msg-bubble{background:white;color:var(--dark);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:linear-gradient(135deg,var(--blue),var(--sky));color:white;border-bottom-right-radius:4px}
+.msg-time{font-size:10px;color:var(--gray);margin-top:4px;text-align:right}
+.msg.bot .msg-time{text-align:left}
+.quick-replies{display:flex;flex-wrap:wrap;gap:8px;padding:0 28px 8px}
+.qr-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--sky);color:var(--blue);background:var(--white);font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.2s}
+.qr-btn:hover{background:var(--ice);transform:translateY(-1px)}
+.chat-input-area{padding:16px 28px;background:var(--white);border-top:1px solid var(--mist);display:flex;gap:10px;align-items:flex-end}
+.chat-input{flex:1;border:1.5px solid var(--mist);border-radius:24px;padding:12px 18px;font-family:'Sarabun',sans-serif;font-size:14px;resize:none;outline:none;max-height:120px;transition:.2s;line-height:1.5}
+.chat-input:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(66,165,245,.15)}
+.send-btn{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--sky));border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(21,101,192,.3);transition:.2s;flex-shrink:0}
+.send-btn:hover{transform:scale(1.08)}
+
+/* ─── DASHBOARD ─── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
+.stat-card{background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 var(--radius) 0 60px;opacity:.08}
+.stat-card.blue::before{background:var(--blue)}
+.stat-card.sky::before{background:var(--sky)}
+.stat-card.slate::before{background:var(--slate)}
+.stat-card.success::before{background:var(--success)}
+.stat-icon{font-size:24px}
+.stat-val{font-size:28px;font-weight:700;color:var(--navy)}
+.stat-label{font-size:12px;color:var(--gray)}
+.stat-change{font-size:11px;font-weight:600}
+.stat-change.up{color:var(--success)}
+.stat-change.down{color:var(--danger)}
+
+.chart-section{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.card{background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.card-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* ─── QUESTION LOG ─── */
+.table-wrap{background:white;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--mist);display:flex;justify-content:space-between;align-items:center}
+table{width:100%;border-collapse:collapse}
+thead th{background:var(--navy);color:white;padding:12px 16px;font-size:12px;font-weight:600;text-align:left}
+tbody tr{border-bottom:1px solid var(--mist);transition:.15s}
+tbody tr:hover{background:var(--ice)}
+tbody td{padding:12px 16px;font-size:13px;color:var(--dark)}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.tag-blue{background:#e3f2fd;color:var(--blue)}
+.tag-slate{background:#eceff1;color:var(--slate)}
+.tag-success{background:#e0f2f1;color:var(--success)}
+
+/* ─── ADMIN ─── */
+.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:var(--slate);margin-bottom:6px;display:block}
+.form-input{width:100%;border:1.5px solid var(--mist);border-radius:var(--radius-sm);padding:10px 14px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;transition:.2s}
+.form-input:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(66,165,245,.12)}
+.form-select{width:100%;border:1.5px solid var(--mist);border-radius:var(--radius-sm);padding:10px 14px;font-family:'Sarabun',sans-serif;font-size:13px;outline:none;background:white}
+
+/* ─── TREND BARS ─── */
+.trend-bar-wrap{display:flex;flex-direction:column;gap:8px}
+.trend-item{display:flex;align-items:center;gap:10px}
+.trend-label{font-size:12px;color:var(--slate);width:140px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trend-bar-bg{flex:1;height:8px;background:var(--mist);border-radius:4px;overflow:hidden}
+.trend-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),var(--sky));transition:width 1s ease}
+.trend-count{font-size:12px;font-weight:700;color:var(--navy);width:24px;text-align:right}
+
+/* ─── LOGIN ─── */
+#loginPage{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,#1a3a6b 50%,var(--blue) 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{background:white;border-radius:20px;padding:40px;width:360px;box-shadow:var(--shadow-lg);text-align:center}
+.login-logo{width:64px;height:64px;background:linear-gradient(135deg,var(--sky),var(--blue));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 16px;box-shadow:0 8px 20px rgba(21,101,192,.35)}
+.login-title{font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--gray);margin-bottom:28px}
+.login-tabs{display:flex;gap:4px;background:var(--mist);border-radius:var(--radius-sm);padding:4px;margin-bottom:20px}
+.login-tab{flex:1;padding:8px;border-radius:6px;border:none;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;background:none;color:var(--gray)}
+.login-tab.active{background:white;color:var(--blue);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.login-error{background:#ffebee;color:var(--danger);font-size:12px;padding:8px 12px;border-radius:var(--radius-sm);margin-bottom:12px;display:none}
+
+/* ─── SCROLL ─── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--gray);border-radius:3px}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:white;padding:12px 20px;border-radius:var(--radius-sm);font-size:13px;box-shadow:var(--shadow-lg);z-index:9998;transform:translateY(80px);opacity:0;transition:.3s}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ─── MODAL ─── */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,31,68,.5);z-index:9000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:white;border-radius:var(--radius);padding:28px;width:520px;max-width:90vw;box-shadow:var(--shadow-lg);max-height:80vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:768px){
+  .sidebar{position:absolute;left:-260px}
+  .sidebar.open{left:0}
+  .chart-section{grid-template-columns:1fr}
+  .admin-grid{grid-template-columns:1fr}
+  .page{padding:16px}
+}
+
+.typing-dots{display:flex;gap:4px;padding:4px}
+.typing-dots span{width:7px;height:7px;border-radius:50%;background:var(--gray);animation:bounce .9s infinite}
+.typing-dots span:nth-child(2){animation-delay:.15s}
+.typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--ice);color:var(--blue)}
+
+/* mini bar chart */
+.mini-chart{display:flex;align-items:flex-end;gap:4px;height:60px;padding-top:8px}
+.mini-bar{flex:1;background:linear-gradient(180deg,var(--sky),var(--blue));border-radius:3px 3px 0 0;min-height:4px;transition:height .5s ease}
+.mini-labels{display:flex;gap:4px;margin-top:4px}
+.mini-labels span{flex:1;font-size:9px;text-align:center;color:var(--gray)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">🤖</div>
+    <div class="login-title">Supplier Help Bot</div>
+    <div class="login-sub">ระบบช่วยเหลือผู้ส่งมอบ CPRAM 2026</div>
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchLoginTab('supplier')">Supplier</button>
+      <button class="login-tab" onclick="switchLoginTab('admin')">Admin</button>
+    </div>
+    <div class="login-error" id="loginError">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+    <div class="form-group">
+      <input class="form-input" id="loginUser" placeholder="Username" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <input class="form-input" type="password" id="loginPass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:13px" onclick="doLogin()">
+      🔐 เข้าสู่ระบบ
+    </button>
+    <p style="margin-top:14px;font-size:11px;color:var(--gray)">Supplier: supplier / 1234 &nbsp;|&nbsp; Admin: admin / admin</p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp" style="display:none">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🤖</div>
+      <h1>Supplier Help Bot</h1>
+      <p>CPRAM Web Audit System</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">หลัก</div>
+      <button class="menu-item active" onclick="showPage('chat')" data-page="chat">
+        <span class="icon">💬</span> แชทบอท
+      </button>
+      <button class="menu-item" onclick="showPage('dashboard')" data-page="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <div class="menu-section admin-only" style="display:none">Admin</div>
+      <button class="menu-item admin-only" onclick="showPage('questions')" data-page="questions" style="display:none">
+        <span class="icon">📋</span> บันทึกคำถาม
+        <span class="menu-badge" id="qBadge">0</span>
+      </button>
+      <button class="menu-item admin-only" onclick="showPage('users')" data-page="users" style="display:none">
+        <span class="icon">👥</span> จัดการผู้ใช้
+      </button>
+      <button class="menu-item admin-only" onclick="showPage('export')" data-page="export" style="display:none">
+        <span class="icon">📤</span> Export รายงาน
+      </button>
+      <div class="menu-section">ระบบ</div>
+      <button class="menu-item" onclick="showPage('help')" data-page="help">
+        <span class="icon">❓</span> คู่มือใช้งาน
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebarAvatar">S</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Supplier</div>
+          <div class="user-role" id="sidebarRole">ผู้ส่งมอบ</div>
+        </div>
+        <button style="background:none;border:none;cursor:pointer;color:var(--gray);font-size:16px" onclick="doLogout()" title="ออกจากระบบ">⏻</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <button style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--navy)" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title">Supplier <span>Help Bot</span></div>
+      <div class="topbar-actions">
+        <div id="topbarTime" style="font-size:12px;color:var(--gray)"></div>
+        <button class="btn btn-outline btn-sm" onclick="showPage('chat')">💬 แชท</button>
+      </div>
+    </div>
+
+    <!-- CHAT PAGE -->
+    <div style="display:flex;flex-direction:column;flex:1;overflow:hidden" id="chatPageWrapper">
+      <div class="chat-page" id="chatMessages">
+        <!-- messages injected -->
+      </div>
+      <div class="quick-replies" id="quickReplies"></div>
+      <div class="chat-input-area">
+        <textarea class="chat-input" id="chatInput" rows="1" placeholder="พิมพ์คำถามของคุณที่นี่..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" onclick="sendMessage()">➤</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page" id="dashboardPage">
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-icon">💬</div>
+          <div class="stat-val" id="st1">0</div>
+          <div class="stat-label">คำถามทั้งหมด</div>
+          <div class="stat-change up" id="st1c">↑ เพิ่มขึ้น</div>
+        </div>
+        <div class="stat-card sky">
+          <div class="stat-icon">👤</div>
+          <div class="stat-val" id="st2">0</div>
+          <div class="stat-label">ผู้ใช้งานทั้งหมด</div>
+          <div class="stat-change up">↑ วันนี้</div>
+        </div>
+        <div class="stat-card slate">
+          <div class="stat-icon">✅</div>
+          <div class="stat-val" id="st3">98%</div>
+          <div class="stat-label">คำถามตอบสำเร็จ</div>
+          <div class="stat-change up">↑ ดีมาก</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-icon">⏱</div>
+          <div class="stat-val">1.2s</div>
+          <div class="stat-label">เวลาตอบเฉลี่ย</div>
+          <div class="stat-change up">↑ เร็ว</div>
+        </div>
+      </div>
+      <div class="chart-section">
+        <div class="card">
+          <div class="card-title">📈 แนวโน้มคำถามรายวัน (7 วันล่าสุด)</div>
+          <div class="mini-chart" id="barChart"></div>
+          <div class="mini-labels" id="barLabels"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏷 หัวข้อคำถามยอดนิยม</div>
+          <div class="trend-bar-wrap" id="topicTrend"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🕑 คำถามล่าสุด</div>
+        <div id="recentQuestions"></div>
+      </div>
+    </div>
+
+    <!-- QUESTIONS PAGE -->
+    <div class="page" id="questionsPage">
+      <div class="table-wrap">
+        <div class="table-header">
+          <div style="font-size:15px;font-weight:700;color:var(--navy)">📋 บันทึกคำถาม-คำตอบทั้งหมด</div>
+          <div style="display:flex;gap:8px">
+            <input class="form-input" style="width:200px" placeholder="🔍 ค้นหา..." oninput="filterQ(this.value)" id="qSearch">
+            <button class="btn btn-primary btn-sm" onclick="exportPDF()">📄 Export PDF</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th>คำถาม</th>
+              <th>หมวดหมู่</th>
+              <th>ผู้ถาม</th>
+              <th>วันที่-เวลา</th>
+              <th>สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="qTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS PAGE -->
+    <div class="page" id="usersPage">
+      <div class="table-wrap">
+        <div class="table-header">
+          <div style="font-size:15px;font-weight:700;color:var(--navy)">👥 จัดการผู้ใช้งาน</div>
+          <button class="btn btn-primary btn-sm" onclick="openAddUser()">+ เพิ่มผู้ใช้</button>
+        </div>
+        <table>
+          <thead>
+            <tr><th>#</th><th>ชื่อผู้ใช้</th><th>ชื่อบริษัท</th><th>บทบาท</th><th>สถานะ</th><th>วันที่สร้าง</th><th>จัดการ</th></tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- EXPORT PAGE -->
+    <div class="page" id="exportPage">
+      <div class="card">
+        <div class="card-title">📤 Export รายงาน PDF</div>
+        <div class="admin-grid">
+          <div>
+            <div class="form-group">
+              <label class="form-label">ประเภทรายงาน</label>
+              <select class="form-select" id="exportType">
+                <option value="all">รายงานคำถามทั้งหมด</option>
+                <option value="trend">รายงานแนวโน้มการใช้งาน</option>
+                <option value="today">รายงานวันนี้</option>
+                <option value="users">รายงานผู้ใช้งาน</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">วันที่เริ่มต้น</label>
+              <input type="date" class="form-input" id="dateFrom">
+            </div>
+            <div class="form-group">
+              <label class="form-label">วันที่สิ้นสุด</label>
+              <input type="date" class="form-input" id="dateTo">
+            </div>
+          </div>
+          <div>
+            <div class="form-group">
+              <label class="form-label">รูปแบบ</label>
+              <select class="form-select">
+                <option>PDF</option>
+                <option>CSV (ข้อความ)</option>
+              </select>
+            </div>
+            <div style="background:var(--ice);border-radius:var(--radius-sm);padding:16px;margin-top:8px">
+              <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:8px">📊 ตัวอย่างรายงานจะประกอบด้วย:</div>
+              <ul style="font-size:12px;color:var(--slate);padding-left:16px;line-height:2">
+                <li>สรุปจำนวนคำถามทั้งหมด</li>
+                <li>แนวโน้มรายวัน/รายสัปดาห์</li>
+                <li>หัวข้อที่ถามบ่อยที่สุด</li>
+                <li>รายการคำถาม-คำตอบ</li>
+                <li>ข้อมูลผู้ใช้งาน (ถ้าเลือก)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <button class="btn btn-primary" onclick="exportPDF()">📄 สร้าง PDF</button>
+          <button class="btn btn-outline" onclick="exportCSV()">📊 Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HELP PAGE -->
+    <div class="page" id="helpPage">
+      <div class="card">
+        <div class="card-title">❓ คู่มือการใช้งาน Web Audit Supplier Online</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px" id="helpCards"></div>
+      </div>
+    </div>
+
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<!-- MODAL ADD USER -->
+<div class="modal-overlay" id="addUserModal">
+  <div class="modal">
+    <div class="modal-title">👤 เพิ่มผู้ใช้งานใหม่</div>
+    <div class="form-group">
+      <label class="form-label">Username (ภาษาอังกฤษเท่านั้น)</label>
+      <input class="form-input" id="newUsername" placeholder="e.g. supplier_abc">
+    </div>
+    <div class="form-group">
+      <label class="form-label">รหัสผ่าน</label>
+      <input class="form-input" type="password" id="newPassword" placeholder="รหัสผ่าน">
+    </div>
+    <div class="form-group">
+      <label class="form-label">ชื่อบริษัท</label>
+      <input class="form-input" id="newCompany" placeholder="ชื่อบริษัท">
+    </div>
+    <div class="form-group">
+      <label class="form-label">บทบาท</label>
+      <select class="form-select" id="newRole">
+        <option value="supplier">Supplier User</option>
+        <option value="supplier_admin">Supplier Admin</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addUserModal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addUser()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'supplierHelpBot_v2';
+let state = {
+  currentUser: null,
+  users: [
+    {id:1,username:'supplier',password:'1234',company:'บริษัท ตัวอย่าง จำกัด',role:'supplier',createdAt:'2026-01-01'},
+    {id:2,username:'admin',password:'admin',company:'CPRAM',role:'admin',createdAt:'2026-01-01'},
+  ],
+  questions: [],
+  sessionStart: new Date().toISOString(),
+};
+
+// Load from storage
+try {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if(saved) { const s = JSON.parse(saved); state.users = s.users||state.users; state.questions = s.questions||[]; }
+} catch(e){}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({users:state.users,questions:state.questions})); } catch(e){}
+}
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+let loginMode = 'supplier';
+function switchLoginTab(mode) {
+  loginMode = mode;
+  document.querySelectorAll('.login-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('loginError').style.display='none';
+}
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const user = state.users.find(x=>x.username===u&&x.password===p);
+  if(!user){document.getElementById('loginError').style.display='block';return;}
+  if(loginMode==='admin'&&user.role!=='admin'){document.getElementById('loginError').style.display='block';return;}
+  state.currentUser = user;
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('mainApp').style.display='flex';
+  setupUser(user);
+  initChat();
+  renderDashboard();
+  logAccess(user);
+}
+
+function doLogout() {
+  state.currentUser = null;
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+function setupUser(user) {
+  const isAdmin = user.role==='admin';
+  document.getElementById('sidebarAvatar').textContent = user.username[0].toUpperCase();
+  document.getElementById('sidebarName').textContent = user.username;
+  document.getElementById('sidebarRole').textContent = isAdmin?'ผู้ดูแลระบบ':'ผู้ส่งมอบ';
+  document.querySelectorAll('.admin-only').forEach(el=>el.style.display=isAdmin?'':'none');
+  renderUsers();
+  renderHelp();
+}
+
+function logAccess(user) {
+  // Record access (session)
+}
+
+// ─── PAGES ───────────────────────────────────────────────────────────────────
+function showPage(name) {
+  ['dashboard','questions','users','export','help'].forEach(p=>{
+    const el = document.getElementById(p+'Page');
+    if(el){el.style.display='none';el.classList.remove('active');}
+  });
+  const chatWrapper = document.getElementById('chatPageWrapper');
+  chatWrapper.style.display='none';
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+  document.querySelector(`[data-page="${name}"]`)?.classList.add('active');
+  if(name==='chat'){chatWrapper.style.display='flex';}
+  else{
+    const page = document.getElementById(name+'Page');
+    if(page){page.style.display='flex';page.classList.add('active');}
+    if(name==='dashboard')renderDashboard();
+    if(name==='questions')renderQTable();
+    if(name==='users')renderUsers();
+  }
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ─── CLOCK ───────────────────────────────────────────────────────────────────
+setInterval(()=>{
+  const now=new Date();
+  document.getElementById('topbarTime').textContent=now.toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'});
+},1000);
+
+// ─── QA KNOWLEDGE BASE ───────────────────────────────────────────────────────
+const KB = [
+  {k:['ลิงก์','url','เว็บ','เข้าระบบ','link'],cat:'การเข้าระบบ',
+   a:'🌐 สามารถเข้าใช้งานได้ที่:\n<a href="http://app.cpram.co.th/auditsupplier" target="_blank" style="color:var(--sky)">http://app.cpram.co.th/auditsupplier</a>'},
+  {k:['อุปกรณ์','สมาร์ทโฟน','โทรศัพท์','pc','notebook','laptop','mobile'],cat:'การเข้าระบบ',
+   a:'📱 รองรับการใช้งานผ่าน:\n• Smart Phone\n• PC / Desktop\n• Notebook / Laptop\n\nทั้ง iOS และ Android'},
+  {k:['ลืมรหัส','password','รหัสผ่าน','forgot'],cat:'การเข้าระบบ',
+   a:'🔑 หากลืมรหัสผ่าน:\n1. ไปที่หน้า Login\n2. กดที่ "ลืมรหัสผ่าน"\n3. ระบบจะส่งรหัสใหม่ทางอีเมลที่ลงทะเบียนไว้อัตโนมัติ'},
+  {k:['เปลี่ยนรหัส','แก้ไขรหัส','change password'],cat:'การเข้าระบบ',
+   a:'⚙️ เปลี่ยนรหัสผ่าน:\n1. ไปที่เมนู "ข้อมูลส่วนตัว"\n2. กรอกรหัสผ่านใหม่\n3. กด "บันทึก" ทุกครั้งหลังแก้ไข'},
+  {k:['เพิ่มผู้ใช้','ลบผู้ใช้','supplier admin','จัดการผู้ใช้'],cat:'การจัดการผู้ใช้',
+   a:'👤 การจัดการผู้ใช้:\n• เฉพาะ Supplier Admin เท่านั้น\n• ไปที่เมนู "จัดการผู้ใช้งาน"\n• ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษเท่านั้น'},
+  {k:['นัดหมาย','ยืนยัน','confirm','appointment'],cat:'การนัดหมาย',
+   a:'📅 การยืนยันนัดหมาย:\n1. รับแจ้งเตือนทางอีเมล\n2. Login เข้าระบบ\n3. ไปที่เมนู "การนัดหมาย"\n4. กดยืนยันการเข้าตรวจประเมิน'},
+  {k:['เลื่อนนัด','เปลี่ยนวัน','reschedule'],cat:'การนัดหมาย',
+   a:'📆 การเลื่อนนัด:\n1. ไปที่เมนู "การนัดหมาย"\n2. เลือกช่วงวันที่ต้องการ\n3. ระบุเหตุผล\n4. กด "บันทึก"'},
+  {k:['เอกสาร','แนบ','document','gmp','haccp','brc','iso','process flow','assessment'],cat:'เอกสาร',
+   a:'📎 เอกสารที่ต้องแนบ (ที่เมนู "แผนการเข้าตรวจ"):\n1. 🏭 เอกสารรับรองสถานที่ผลิต (GMP, HACCP, BRC, ISO)\n2. 📊 มาตรฐานสินค้า\n3. 🔄 ขั้นตอนกระบวนการผลิต (Process Flow)\n4. 📋 Supplier Assessment'},
+  {k:['ผลตรวจ','สรุปผล','audit result','ยืนยันผล'],cat:'ผลการตรวจ',
+   a:'✅ การยืนยันผลการตรวจ:\n1. ไปที่เมนู "แผนการเข้าตรวจ" หรือ "สรุปผลการเข้าตรวจ"\n2. กดเครื่องหมาย ≡ เพื่อยืนยันผล\n3. การเซ็นรับทราบหน้างานทำผ่าน Tablet'},
+  {k:['สถานะ','status','รอเข้าตรวจ','รอยืนยัน'],cat:'ผลการตรวจ',
+   a:'🔄 ความหมายของสถานะ:\n• 🟡 รอเข้าตรวจ = รอรับการตรวจจาก Auditor\n• 🔵 รอยืนยันผล = รอ Auditor ยืนยันผลในระบบ\n• 🟢 แจ้งผลแล้ว = ได้รับผลการตรวจแล้ว\n• ✅ ยืนยันผลแล้ว = เสร็จสมบูรณ์\n• ❌ ยกเลิก = แผนถูกยกเลิก'},
+  {k:['car','การแก้ไข','ข้อบกพร่อง','defect','ตอบกลับ'],cat:'การแก้ไข CAR',
+   a:'🔧 การตอบกลับ CAR:\n1. เข้าไปที่หัวข้อปัญหา\n2. กด "ดูรายละเอียด"\n3. กรอก "วิธีการแก้ไข"\n4. กำหนด "Due Date"\n5. แนบหลักฐาน (.jpg หรือ .png)\n6. กด "บันทึก" แล้วรอผู้อนุมัติ'},
+  {k:['due date','วันที่แก้ไข','กำหนดวัน'],cat:'การแก้ไข CAR',
+   a:'📅 Due Date คือวันที่คุณกำหนดหรือคาดการณ์ว่าจะแก้ไขปัญหาให้เสร็จสิ้น กรอกในช่อง "Due Date" ตอนตอบกลับการแก้ไข'},
+  {k:['หลักฐาน','รูปภาพ','jpg','png','ไฟล์'],cat:'การแก้ไข CAR',
+   a:'🖼 ประเภทไฟล์หลักฐานที่รองรับ:\n• .jpg / .jpeg\n• .png\n\nแนบในหัวข้อ "หลักฐานการแก้ไข"'},
+  {k:['ขั้นตอน','flow','กี่ขั้น','กระบวนการ'],cat:'ภาพรวมระบบ',
+   a:'📌 ขั้นตอน Audit Online ทั้งหมด 8 ขั้น:\n1️⃣ แจ้งวันนัดหมาย\n2️⃣ ตอบยืนยัน\n3️⃣ เข้าตรวจประเมิน\n4️⃣ เซ็นรับทราบบน Tablet\n5️⃣ แจ้งผลทาง Web\n6️⃣ ยืนยันรับทราบผล\n7️⃣ ตอบกลับการแก้ไข\n8️⃣ อนุมัติปิดประเด็น'},
+  {k:['ติดต่อ','แจ้งปัญหา','support','อีเมล','โทร','contact'],cat:'ติดต่อ',
+   a:'📞 ติดต่อผู้ดูแลระบบ:\n📧 CPRAMInspectionBody@cpram.co.th\n📧 sirinankaewp@cpram.co.th\n📧 nakarinsaku@cpram.co.th\n📧 chetsadaphonbun@cpram.co.th\n☎️ 02-599-1744 ต่อ 1502\n📱 083-490-1145'},
+  {k:['จบแล้วหรือ','เสร็จหรือยัง','ปิดประเด็น','อนุมัติ'],cat:'การแก้ไข CAR',
+   a:'ℹ️ หลังส่งคำตอบกลับและแนบหลักฐานแล้ว ยังไม่จบ!\nต้องรอ Auditor ตรวจสอบและ "อนุมัติปิดประเด็น" ในระบบก่อน จึงจะเสร็จสมบูรณ์'},
+];
+
+const GREETINGS = ['สวัสดี','hello','hi','ดีครับ','ดีค่ะ','หวัดดี'];
+const THANKS = ['ขอบคุณ','thanks','thank','ขอบใจ'];
+
+function findAnswer(text) {
+  const t = text.toLowerCase();
+  if(GREETINGS.some(g=>t.includes(g))){
+    return {a:`สวัสดีครับ! 👋 ยินดีต้อนรับสู่ Supplier Help Bot ของ CPRAM\n\nฉันพร้อมช่วยตอบคำถามเกี่ยวกับระบบ Web Audit Supplier Online ครับ\n\nคุณต้องการทราบเรื่องอะไรครับ?`,cat:'ทั่วไป'};
+  }
+  if(THANKS.some(g=>t.includes(g))){
+    return {a:`ยินดีเสมอครับ 😊\nหากมีคำถามเพิ่มเติม สามารถถามได้เลยครับ!`,cat:'ทั่วไป'};
+  }
+  for(const item of KB){
+    if(item.k.some(k=>t.includes(k))){return item;}
+  }
+  return {a:`ขออภัยครับ ฉันยังไม่มีข้อมูลเกี่ยวกับเรื่องนี้\n\nกรุณาติดต่อผู้ดูแลระบบ:\n📧 CPRAMInspectionBody@cpram.co.th\n☎️ 02-599-1744 ต่อ 1502`,cat:'ไม่ทราบ'};
+}
+
+// ─── CHAT ────────────────────────────────────────────────────────────────────
+function initChat() {
+  const el = document.getElementById('chatMessages');
+  el.innerHTML='';
+  addMsg('bot','สวัสดีครับ! 👋 ยินดีต้อนรับสู่ <strong>Supplier Help Bot</strong> CPRAM\n\nฉันสามารถช่วยตอบคำถามเกี่ยวกับ <strong>Web Audit Supplier Online</strong> ได้ครับ\n\nลองเลือกหัวข้อด้านล่าง หรือพิมพ์คำถามของคุณได้เลย!');
+  setQuickReplies(['📱 วิธีเข้าระบบ','🔑 ลืมรหัสผ่าน','📅 นัดหมาย Audit','📋 ขั้นตอนทั้งหมด','🔧 ตอบกลับ CAR','📞 ติดต่อ Support']);
+}
+
+function addMsg(role, text, time) {
+  const el = document.getElementById('chatMessages');
+  const d = document.createElement('div');
+  d.className = `msg ${role}`;
+  const t = time || new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+  const htmlText = text.replace(/\n/g,'<br>');
+  d.innerHTML = `
+    <div class="msg-avatar ${role}">${role==='bot'?'🤖':'👤'}</div>
+    <div>
+      <div class="msg-bubble">${htmlText}</div>
+      <div class="msg-time">${t}</div>
+    </div>`;
+  el.appendChild(d);
+  el.scrollTop = el.scrollHeight;
+}
+
+function showTyping() {
+  const el = document.getElementById('chatMessages');
+  const d = document.createElement('div');
+  d.className='msg bot';d.id='typing';
+  d.innerHTML=`<div class="msg-avatar bot">🤖</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function hideTyping(){document.getElementById('typing')?.remove();}
+
+function setQuickReplies(items) {
+  const el = document.getElementById('quickReplies');
+  el.innerHTML = items.map(i=>`<button class="qr-btn" onclick="sendQR('${i}')">${i}</button>`).join('');
+}
+
+function sendQR(text){
+  document.getElementById('quickReplies').innerHTML='';
+  document.getElementById('chatInput').value=text;
+  sendMessage();
+}
+
+function sendMessage() {
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if(!text) return;
+  inp.value='';inp.style.height='auto';
+  addMsg('user', text);
+  setQuickReplies([]);
+  showTyping();
+  setTimeout(()=>{
+    hideTyping();
+    const res = findAnswer(text);
+    addMsg('bot', res.a);
+    // save question
+    const q = {
+      id: Date.now(),
+      question: text,
+      answer: res.a.replace(/<[^>]+>/g,''),
+      category: res.cat,
+      user: state.currentUser?.username||'guest',
+      time: new Date().toISOString(),
+      status: '✅ ตอบแล้ว'
+    };
+    state.questions.unshift(q);
+    saveState();
+    updateBadge();
+    setQuickReplies(['📱 วิธีเข้าระบบ','🔑 ลืมรหัสผ่าน','📅 นัดหมาย','🔧 CAR','📞 ติดต่อ']);
+  }, 900 + Math.random()*600);
+}
+
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
+function updateBadge(){const b=document.getElementById('qBadge');if(b)b.textContent=state.questions.length;}
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────────────
+function renderDashboard() {
+  document.getElementById('st1').textContent = state.questions.length;
+  document.getElementById('st2').textContent = state.users.filter(u=>u.role!=='admin').length;
+  updateBadge();
+  // Bar chart last 7 days
+  const days=[];const counts=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=d.toISOString().slice(0,10);
+    days.push(d.toLocaleDateString('th-TH',{weekday:'short'}));
+    counts.push(state.questions.filter(q=>q.time.startsWith(ds)).length);
+  }
+  const max=Math.max(...counts,1);
+  document.getElementById('barChart').innerHTML=counts.map((c,i)=>`<div class="mini-bar" style="height:${Math.max((c/max)*52,4)}px" title="${days[i]}: ${c} คำถาม"></div>`).join('');
+  document.getElementById('barLabels').innerHTML=days.map(d=>`<span>${d}</span>`).join('');
+  // Topics
+  const cats={};
+  state.questions.forEach(q=>{cats[q.category]=(cats[q.category]||0)+1;});
+  const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topMax=Math.max(...sorted.map(x=>x[1]),1);
+  document.getElementById('topicTrend').innerHTML=sorted.map(([k,v])=>`
+    <div class="trend-item">
+      <div class="trend-label">${k}</div>
+      <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:${(v/topMax)*100}%"></div></div>
+      <div class="trend-count">${v}</div>
+    </div>`).join('')||'<div style="color:var(--gray);font-size:13px">ยังไม่มีข้อมูล</div>';
+  // Recent
+  const rec=state.questions.slice(0,5);
+  document.getElementById('recentQuestions').innerHTML=rec.length?rec.map(q=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--mist)">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)">${q.question.slice(0,60)}${q.question.length>60?'...':''}</div>
+        <div style="font-size:11px;color:var(--gray);margin-top:2px">${q.user} · ${new Date(q.time).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'})}</div>
+      </div>
+      <span class="tag tag-blue">${q.category}</span>
+    </div>`).join(''):'<div style="color:var(--gray);font-size:13px;padding:12px 0">ยังไม่มีคำถาม</div>';
+}
+
+// ─── Q TABLE ─────────────────────────────────────────────────────────────────
+function renderQTable(filter='') {
+  const qs = filter ? state.questions.filter(q=>q.question.toLowerCase().includes(filter.toLowerCase())||q.category.toLowerCase().includes(filter.toLowerCase())) : state.questions;
+  document.getElementById('qTableBody').innerHTML = qs.map((q,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td style="max-width:300px">${q.question.slice(0,80)}${q.question.length>80?'...':''}</td>
+      <td><span class="tag tag-blue">${q.category}</span></td>
+      <td>${q.user}</td>
+      <td style="font-size:11px">${new Date(q.time).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'})}</td>
+      <td><span class="tag tag-success">${q.status}</span></td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray)">ยังไม่มีข้อมูล</td></tr>';
+}
+function filterQ(v){renderQTable(v);}
+
+// ─── USERS ───────────────────────────────────────────────────────────────────
+function renderUsers() {
+  document.getElementById('userTableBody').innerHTML = state.users.map((u,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td><strong>${u.username}</strong></td>
+      <td>${u.company}</td>
+      <td><span class="tag ${u.role==='admin'?'tag-blue':'tag-slate'}">${u.role}</span></td>
+      <td><span class="tag tag-success">ใช้งาน</span></td>
+      <td style="font-size:11px">${u.createdAt}</td>
+      <td>
+        ${u.role!=='admin'?`<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id})">ลบ</button>`:'–'}
+      </td>
+    </tr>`).join('');
+}
+
+function openAddUser(){document.getElementById('addUserModal').classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+function addUser() {
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const company = document.getElementById('newCompany').value.trim();
+  const role = document.getElementById('newRole').value;
+  if(!username||!password||!company){showToast('กรุณากรอกข้อมูลให้ครบ');return;}
+  if(!/^[a-zA-Z0-9_]+$/.test(username)){showToast('Username ต้องเป็นภาษาอังกฤษและตัวเลขเท่านั้น');return;}
+  const newUser = {id:Date.now(),username,password,company,role,createdAt:new Date().toISOString().slice(0,10)};
+  state.users.push(newUser);saveState();renderUsers();closeModal('addUserModal');
+  showToast('✅ เพิ่มผู้ใช้งานสำเร็จ');
+}
+
+function deleteUser(id) {
+  if(!confirm('ต้องการลบผู้ใช้งานนี้?'))return;
+  state.users=state.users.filter(u=>u.id!==id);saveState();renderUsers();showToast('🗑 ลบผู้ใช้งานแล้ว');
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+function exportPDF() {
+  const now = new Date().toLocaleString('th-TH');
+  const qs = state.questions;
+  const cats = {};
+  qs.forEach(q=>{cats[q.category]=(cats[q.category]||0)+1;});
+  
+  let htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    body{font-family:Arial,sans-serif;padding:32px;color:#263238;font-size:13px}
+    h1{color:#0a1f44;border-bottom:3px solid #1565c0;padding-bottom:8px}
+    h2{color:#1565c0;margin-top:24px}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th{background:#0a1f44;color:white;padding:8px 12px;text-align:left;font-size:12px}
+    td{padding:8px 12px;border-bottom:1px solid #eceff1;font-size:12px}
+    tr:nth-child(even){background:#f5f7fa}
+    .badge{background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:12px;font-size:11px}
+    .stat-row{display:flex;gap:16px;margin:16px 0}
+    .stat-box{flex:1;background:#e3f2fd;border-radius:8px;padding:16px;text-align:center}
+    .stat-num{font-size:28px;font-weight:bold;color:#0a1f44}
+    .stat-lbl{font-size:12px;color:#546e7a}
+    @media print{body{padding:0}}
+  </style></head><body>
+  <h1>📊 รายงาน Supplier Help Bot – CPRAM</h1>
+  <p>วันที่ออกรายงาน: ${now}</p>
+  <div class="stat-row">
+    <div class="stat-box"><div class="stat-num">${qs.length}</div><div class="stat-lbl">คำถามทั้งหมด</div></div>
+    <div class="stat-box"><div class="stat-num">${state.users.filter(u=>u.role!=='admin').length}</div><div class="stat-lbl">ผู้ใช้งาน</div></div>
+    <div class="stat-box"><div class="stat-num">98%</div><div class="stat-lbl">ตอบสำเร็จ</div></div>
+    <div class="stat-box"><div class="stat-num">${Object.keys(cats).length}</div><div class="stat-lbl">หมวดหมู่</div></div>
+  </div>
+  <h2>📈 สรุปตามหมวดหมู่</h2>
+  <table><thead><tr><th>หมวดหมู่</th><th>จำนวนคำถาม</th></tr></thead><tbody>
+  ${Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')||'<tr><td colspan="2" style="text-align:center;color:#90a4ae">ยังไม่มีข้อมูล</td></tr>'}
+  </tbody></table>
+  <h2>📋 รายการคำถาม-คำตอบ</h2>
+  <table><thead><tr><th>#</th><th>คำถาม</th><th>หมวดหมู่</th><th>ผู้ถาม</th><th>วันที่-เวลา</th></tr></thead><tbody>
+  ${qs.map((q,i)=>`<tr><td>${i+1}</td><td>${q.question}</td><td><span class="badge">${q.category}</span></td><td>${q.user}</td><td>${new Date(q.time).toLocaleString('th-TH',{dateStyle:'short',timeStyle:'short'})}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#90a4ae">ยังไม่มีข้อมูล</td></tr>'}
+  </tbody></table>
+  <p style="margin-top:32px;color:#90a4ae;font-size:11px">สร้างโดย Supplier Help Bot – CPRAM Inspection Body | ${now}</p>
+  <script>window.onload=()=>{window.print();}<\/script>
+  </body></html>`;
+  
+  const win = window.open('','_blank','width=900,height=700');
+  win.document.write(htmlContent);
+  win.document.close();
+  showToast('📄 กำลังเปิด PDF...');
+}
+
+function exportCSV() {
+  const header = ['#','คำถาม','หมวดหมู่','ผู้ถาม','วันที่-เวลา','สถานะ'];
+  const rows = state.questions.map((q,i)=>[i+1,`"${q.question}"`,q.category,q.user,new Date(q.time).toLocaleString('th-TH'),q.status]);
+  const csv = [header,...rows].map(r=>r.join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');a.href=URL.createObjectURL(blob);a.download='supplier_helpbot_report.csv';a.click();
+  showToast('📊 ดาวน์โหลด CSV แล้ว');
+}
+
+// ─── HELP PAGE ───────────────────────────────────────────────────────────────
+const HELP_ITEMS = [
+  {icon:'🔐',title:'การเข้าสู่ระบบ',text:'เข้าใช้งานที่ http://app.cpram.co.th/auditsupplier ด้วย Username/Password ที่ได้รับทางอีเมล'},
+  {icon:'📱',title:'อุปกรณ์ที่รองรับ',text:'Smart Phone, PC, Notebook/Laptop ทุกระบบปฏิบัติการ'},
+  {icon:'🔑',title:'ลืมรหัสผ่าน',text:'กด "ลืมรหัสผ่าน" บนหน้า Login ระบบจะส่งรหัสใหม่ทางอีเมล'},
+  {icon:'👤',title:'จัดการผู้ใช้',text:'Supplier Admin สามารถเพิ่ม/ลบ Supplier User ได้ที่เมนู "จัดการผู้ใช้งาน"'},
+  {icon:'📅',title:'การนัดหมาย',text:'รับแจ้งทางอีเมล แล้วเข้ายืนยัน/เลื่อนนัดที่เมนู "การนัดหมาย"'},
+  {icon:'📎',title:'แนบเอกสาร',text:'แนบ GMP/HACCP/BRC, มาตรฐานสินค้า, Process Flow, Supplier Assessment ที่เมนู "แผนการเข้าตรวจ"'},
+  {icon:'✅',title:'ยืนยันผลตรวจ',text:'ไปที่ "สรุปผลการเข้าตรวจ" แล้วกดยืนยันรับทราบผล'},
+  {icon:'🔧',title:'ตอบกลับ CAR',text:'กรอกวิธีแก้ไข ระบุ Due Date แนบหลักฐาน (.jpg/.png) แล้วรอผู้อนุมัติ'},
+];
+function renderHelp(){
+  document.getElementById('helpCards').innerHTML=HELP_ITEMS.map(h=>`
+    <div style="background:var(--ice);border-radius:var(--radius);padding:16px;cursor:pointer" onclick="sendQR('${h.title}')">
+      <div style="font-size:24px;margin-bottom:8px">${h.icon}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${h.title}</div>
+      <div style="font-size:12px;color:var(--slate);line-height:1.5">${h.text}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--sky);font-weight:600">💬 ถามแชทบอท →</div>
+    </div>`).join('');
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+updateBadge();
+</script>
+</body>
+</html>
